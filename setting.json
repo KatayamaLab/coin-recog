@@ -1,13 +1,17 @@
 {
     "img_dir": "data/insolation",
     "draw_graph": false,
-    "modes": ["none", "pole", "weed", "mask"],
     "pred_ratio": 0.1,
     "model_dir": "data/model",
 
-    "threshold": 5000,
+    "chunk": 1024,
+    "channels": 1,
+    "rate":  48000,
+    "seconds": 0.1,
+    "threshold": 1000,
 
-    "modes": ["1", "5"],
+    "modes": ["2", "3"],
     "data_dir": "wav_data",
-    "chunk_length": 100
+    "chunk_length": 100,
+    "chunk_num": 1000
 }

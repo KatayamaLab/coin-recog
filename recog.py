@@ -17,7 +17,7 @@ def main():
     parser.add_argument('-p', '--predict', action='store_true', help='Predict')
     parser.add_argument('-d', '--datadir', type=str, default='data', help='Data dir to learn/predict')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batcn size')
+    parser.add_argument('--batch_size', type=int, default=256, help='Batcn size')
 
     args = parser.parse_args()
 
@@ -39,6 +39,7 @@ def learn(args, options):
     batch_size = args.batch_size
     
     chunk_length = options["chunk_length"]
+    chunk_num = options["chunk_num"]
     modes = options['modes']
     X = []
     Y = []
@@ -55,7 +56,7 @@ def learn(args, options):
             x = np.frombuffer(data, dtype="int16") / float((2^15))
             wav_length = len(x)
 
-            for i in range(10):
+            for i in range(chunk_num):
                 pos = randint(0, wav_length - chunk_length)
                 X.append(x[pos:pos+chunk_length])
                 Y.append(mode_idx)

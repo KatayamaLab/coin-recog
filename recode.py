@@ -5,6 +5,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
+# read optios
 setting_json = 'setting.json'
 if os.path.exists(setting_json):
     with open(setting_json , 'r') as f:
@@ -13,62 +14,68 @@ else:
     print(setting_json + ' does not exist')
     exit()
 
-threshold = options["threshold"]
+channels = options["channels"]
+rate = options["rate"]
+chunk = options["chunk"]
+seconds = options["seconds"]
+byte_format=pyaudio.paInt16
 
-CHUNK = 1024
-FORMAT = pyaudio.paInt16 # int16型
-CHANNELS = 1             # ステレオ
-RATE = 48000             # 441.kHz
-RECORD_SECONDS = 5       # 5秒録音
-WAVE_OUTPUT_FILENAME = "output.wav"
 
-data_dir = "wav_data"
+mode = input("Enter mode: ")
+if mode=="":
+    mode = "test"
+os.makedirs(os.path.join(options["data_dir"], mode), exist_ok=True)
 
-audio = pyaudio.PyAudio()
+file_idx = 0
+try:
+    while 1:
+        print("*** waiting trigger")
 
-stream = audio.open(format=FORMAT,
-                channels=CHANNELS,
-                rate=RATE,
-                input=True,
-                frames_per_buffer=CHUNK)
+        audio = pyaudio.PyAudio()
+        stream = audio.open(format=byte_format,
+                        channels=channels,
+                        rate=rate,
+                        input=True,
+                        frames_per_buffer=chunk)
 
-print("*** waiting trigger")
+        frames = []
+        trigger = False
 
-frames = []
+        while 1:
+            data = stream.read(chunk)
+            a = np.frombuffer(data, dtype="int16")
+            if np.any(a>options["threshold"]):
+                frames.append(data)
+                break
 
-trigger = False
-while trigger == False:
-    data = stream.read(CHUNK)
-    a = np.frombuffer(data, dtype="int16")
-    if np.any(a>threshold):
         print("*** triggered")
-        trigger = True
 
-for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-    data = stream.read(CHUNK)
-    frames.append(data)
-frames = b''.join(frames)
+        for i in range(0, int(rate / chunk * seconds)):
+            data = stream.read(chunk)
+            frames.append(data)
+        frames = b''.join(frames)
 
-x = np.frombuffer(frames, dtype="int16")
+        stream.stop_stream()
+        stream.close()
+        audio.terminate()
 
-print("*** recoding done")
+        x = np.frombuffer(frames, dtype="int16")
 
-plt.figure(figsize=(15,3))
-plt.plot(x)
-plt.show()
+        print("*** recoding done")
 
-stream.stop_stream()
-stream.close()
-audio.terminate()
+        plt.figure(figsize=(15,3))
+        plt.plot(x)
+        plt.show()
 
-filename = input("Enter file name: ")
-if not filename == '':
-    os.makedirs(data_dir, exist_ok=True)
+        filename = "{:03}.wav".format(file_idx)
 
-    wf = wave.open(os.path.join(options["data_dir"], filename), 'wb')
-    wf.setnchannels(CHANNELS)
-    wf.setsampwidth(audio.get_sample_size(FORMAT))
-    wf.setframerate(RATE)
-    wf.writeframes(frames)
-    wf.close()
-    
+        wf = wave.open(os.path.join(options["data_dir"], mode, filename), 'wb')
+        wf.setnchannels(channels)
+        wf.setsampwidth(audio.get_sample_size(byte_format))
+        wf.setframerate(rate)
+        wf.writeframes(frames)
+        wf.close()
+
+        file_idx += 1
+except KeyboardInterrupt:
+    print("*** done")
