@@ -6,6 +6,7 @@ import glob
 import argparse
 import matplotlib.pyplot as plt
 from random import randint
+from sklearn.model_selection import train_test_split
 
 import wave
 import pyaudio
@@ -43,8 +44,8 @@ def learn(args, options):
     Y = []
     mode_num = len(modes)
         
-    for mode in modes:
-        files = glob.glob(os.path.join(options["data_dir"], modes, "*.wav"))
+    for mode_idx, mode in enumerate(modes):
+        files = glob.glob(os.path.join(options["data_dir"], mode, "*.wav"))
 
         for file in files:
             wr = wave.open(file, "r")
@@ -57,28 +58,21 @@ def learn(args, options):
             for i in range(10):
                 pos = randint(0, wav_length - chunk_length)
                 X.append(x[pos:pos+chunk_length])
+                Y.append(mode_idx)
 
-            X = np.array(X)
-            plt.figure(figsize=(15,3))
-            plt.plot(X.T)
-            plt.show()
+    X = np.array(X).astype('float32')
+    # plt.figure(figsize=(15,3))
+    # plt.plot(X.T)
+    # plt.show()
 
-            # X.append(data)
-            # Y.append(index)
-
-    return
-
-    X = np.array(X)
-    X = np.reshape(X, (X.shape[0],X.shape[1],1))
-    Y = np.array(Y)
-    X = X.astype('float32')
     Y = tf.keras.utils.to_categorical(Y, mode_num)
+
+    X = np.reshape(X, (X.shape[0],X.shape[1],1))
 
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10)
 
     model = tf.keras.models.Sequential()
-    
-   
+       
     model.add(tf.keras.layers.Conv1D(64, 8, activation='relu', input_shape=X[0].shape))
     model.add(tf.keras.layers.MaxPooling1D(pool_size=2))
     model.add(tf.keras.layers.Conv1D(32, 8, activation='relu'))

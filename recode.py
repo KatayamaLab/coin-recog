@@ -13,6 +13,8 @@ else:
     print(setting_json + ' does not exist')
     exit()
 
+threshold = options["threshold"]
+
 CHUNK = 1024
 FORMAT = pyaudio.paInt16 # int16型
 CHANNELS = 1             # ステレオ
@@ -38,7 +40,7 @@ trigger = False
 while trigger == False:
     data = stream.read(CHUNK)
     a = np.frombuffer(data, dtype="int16")
-    if np.any(a>5000):
+    if np.any(a>threshold):
         print("*** triggered")
         trigger = True
 

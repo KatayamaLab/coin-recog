@@ -5,6 +5,8 @@
     "pred_ratio": 0.1,
     "model_dir": "data/model",
 
+    "threshold": 5000,
+
     "modes": ["1", "5"],
     "data_dir": "wav_data",
     "chunk_length": 100
