@@ -1,0 +1,11 @@
+{
+    "img_dir": "data/insolation",
+    "draw_graph": false,
+    "modes": ["none", "pole", "weed", "mask"],
+    "pred_ratio": 0.1,
+    "model_dir": "data/model",
+
+    "modes": ["1", "5"],
+    "data_dir": "wav_data",
+    "chunk_length": 100
+}
