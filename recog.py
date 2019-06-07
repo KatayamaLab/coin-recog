@@ -1,6 +1,8 @@
 import os
 import json
 import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, Dropout, Activation, Conv2D, GlobalAveragePooling2D,BatchNormalization, Add
 import numpy as np
 import glob
 import argparse
@@ -89,7 +91,7 @@ def learn(args, options):
 
                 melsp = calculate_melsp(x_)
                 X.append(melsp)
-                
+
                 # print("wave size:{0}\nmelsp size:{1}".format(x.shape, melsp.shape))
                 # show_wave(x)
                 # show_melsp(melsp)
@@ -106,24 +108,56 @@ def learn(args, options):
 
     Y = tf.keras.utils.to_categorical(Y, mode_num)
 
-    X = np.reshape(X, (X.shape[0],X.shape[1],1))
+    X = np.reshape(X, (X.shape[0],X.shape[1],X.shape[2],1))
 
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10)
 
-    model = tf.keras.models.Sequential()
-       
-    model.add(tf.keras.layers.Conv1D(64, 8, activation='relu', input_shape=X[0].shape))
-    model.add(tf.keras.layers.MaxPooling1D(pool_size=2))
-    model.add(tf.keras.layers.Conv1D(32, 8, activation='relu'))
-    model.add(tf.keras.layers.MaxPooling1D(pool_size=2))
-    model.add(tf.keras.layers.Conv1D(32, 8, activation='relu'))
-    model.add(tf.keras.layers.Flatten())
-    model.add(tf.keras.layers.Dense(32, activation='relu'))
-    model.add(tf.keras.layers.Dropout(0.5))
-    model.add(tf.keras.layers.Dense(mode_num, activation='softmax'))
-    #########
+    def cba(inputs, filters, kernel_size, strides):
+        x = Conv2D(filters, kernel_size=kernel_size, strides=strides, padding='same')(inputs)
+        x = BatchNormalization()(x)
+        x = Activation("relu")(x)
+        return x
 
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    inputs = Input(shape=(X_train.shape[1:]))
+
+    x_1 = cba(inputs, filters=32, kernel_size=(1,8), strides=(1,2))
+    x_1 = cba(x_1, filters=32, kernel_size=(8,1), strides=(2,1))
+    x_1 = cba(x_1, filters=64, kernel_size=(1,8), strides=(1,2))
+    x_1 = cba(x_1, filters=64, kernel_size=(8,1), strides=(2,1))
+
+    x_2 = cba(inputs, filters=32, kernel_size=(1,16), strides=(1,2))
+    x_2 = cba(x_2, filters=32, kernel_size=(16,1), strides=(2,1))
+    x_2 = cba(x_2, filters=64, kernel_size=(1,16), strides=(1,2))
+    x_2 = cba(x_2, filters=64, kernel_size=(16,1), strides=(2,1))
+
+    x_3 = cba(inputs, filters=32, kernel_size=(1,32), strides=(1,2))
+    x_3 = cba(x_3, filters=32, kernel_size=(32,1), strides=(2,1))
+    x_3 = cba(x_3, filters=64, kernel_size=(1,32), strides=(1,2))
+    x_3 = cba(x_3, filters=64, kernel_size=(32,1), strides=(2,1))
+
+    x_4 = cba(inputs, filters=32, kernel_size=(1,64), strides=(1,2))
+    x_4 = cba(x_4, filters=32, kernel_size=(64,1), strides=(2,1))
+    x_4 = cba(x_4, filters=64, kernel_size=(1,64), strides=(1,2))
+    x_4 = cba(x_4, filters=64, kernel_size=(64,1), strides=(2,1))
+
+    x = Add()([x_1, x_2, x_3, x_4])
+
+    x = cba(x, filters=128, kernel_size=(1,16), strides=(1,2))
+    x = cba(x, filters=128, kernel_size=(16,1), strides=(2,1))
+
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(mode_num)(x)
+    x = Activation("softmax")(x)
+
+    model = Model(inputs, x)
+    model.summary()
+
+    # Let's train the model using Adam with amsgrad
+    model.compile(loss='categorical_crossentropy',
+                optimizer='adam',
+                metrics=['accuracy'])
+
     model.summary()
 
     log_filepath = "./logs/"
