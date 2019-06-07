@@ -1,7 +1,8 @@
 import os
+import sys
 import json
 import tensorflow as tf
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Dense, Dropout, Activation, Conv2D, GlobalAveragePooling2D,BatchNormalization, Add
 import numpy as np
 import glob
@@ -13,13 +14,16 @@ from python_speech_features import mfcc
 from scipy.fftpack import fft
 import librosa
 import librosa.display
-
 import wave
 import pyaudio
+import wave
+import datetime as dt
+
 
 def main():
     parser = argparse.ArgumentParser()
-    #parser.add_argument('-l', '--learn', action='store_true', help='Learn')
+    parser.add_argument('-l', '--learn', action='store_true', help='Learn')
+    parser.add_argument('-r', '--recode', action='store_true', help='Recode')
     parser.add_argument('-p', '--predict', action='store_true', help='Predict')
     parser.add_argument('-d', '--datadir', type=str, default='data', help='Data dir to learn/predict')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
@@ -35,10 +39,97 @@ def main():
         print(setting_json + ' does not exist')
         exit()
 
+    args.recode = True
     if args.predict == True:
         predict(args, options)
-    else:
+    elif args.recode == True:
+        recode(args, options)
+    elif args.learn == True:
         learn(args, options)
+
+def openAudio(channels, rate, frames_per_buffer):
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=pyaudio.paInt16,
+                    channels=channels,
+                    rate=rate,
+                    input=True,
+                    frames_per_buffer=frames_per_buffer)
+    return audio, stream
+
+def closeAudio(audio, stream):
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+
+def recode(args, options):
+    channels = options["channels"]
+    rate = options["rate"]
+    chunk = options["chunk"]
+    seconds = options["seconds"]
+
+    mode = input("Enter mode: ")
+    if mode=="":
+        mode = "test"
+    os.makedirs(os.path.join(options["data_dir"], mode), exist_ok=True)
+
+    file_idx = 0
+    try:
+        while 1:
+            print("*** waiting trigger")
+
+            audio, stream = openAudio(channels, rate, chunk)
+
+            frames = []
+            trigger = False
+
+            while 1:
+                data = stream.read(chunk)
+                np_data = np.frombuffer(data, dtype="int16")
+                level = int(np_data.max()/(2**8))
+                bar = "="*level + " "*(100-level)
+                th = int(options["threshold"]/(2**8))
+                bar = bar[:th] + "|" + bar[1+th:]
+                print("\r" + bar, end="")
+                if np.any(np_data>options["threshold"]):
+                    frames.append(data)
+                    break
+                
+            print()
+            print("*** triggered")
+
+            for i in range(0, int(rate / chunk * seconds)):
+                data = stream.read(chunk)
+                frames.append(data)
+            frames = b''.join(frames)
+
+            closeAudio(audio, stream)
+
+            x = np.frombuffer(frames, dtype="int16")
+
+            print("*** recoding done")
+
+            # plt.figure(figsize=(15,3))
+            # plt.plot(x)
+            # plt.show()
+
+            filename = "{:03}.wav".format(file_idx)
+
+            wf = wave.open(os.path.join(options["data_dir"], mode, filename), 'wb')
+            wf.setnchannels(channels)
+            wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
+            wf.setframerate(rate)
+            wf.writeframes(frames)
+            wf.close()
+
+            print("*** saved to "+filename)
+            print()
+
+
+            file_idx += 1
+    except KeyboardInterrupt:
+        print("*** done")
+
+
 
 def calculate_melsp(x, n_fft=1024, hop_length=128):
     stft = np.abs(librosa.stft(x, n_fft=n_fft, hop_length=hop_length))**2
@@ -173,6 +264,36 @@ def learn(args, options):
     os.makedirs(options["model_dir"], exist_ok=True)
     model.save(os.path.join(options["model_dir"], 'save.h5'))
 
+def predict(args, options):
+    model = load_model(os.path.join(options["model_dir"], 'save.h5'))
 
-if __name__ is "__main__":
+    X = []
+    Y = []
+    mode_num = len(options['modes'])
+    
+    result_img_path = os.path.join('results', dt.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    os.makedirs(result_img_path, exist_ok=True)
+
+    audio, stream = openAudio(channels, rate, chunk)
+
+    while 1:
+        X = []
+
+        for i in range(0, int(chunk_length / chunk)):
+            data = stream.read(chunk)
+            frames.append(data)
+        frames = b''.join(frames)
+
+        melsp = calculate_melsp(frames)
+        X.append(melsp)
+
+        X = np.array(X).astype('float32')
+        X = np.reshape(X, (X.shape[0],X.shape[1],X.shape[2],1))
+
+        predict = model.predict(X)
+
+        print(file, options['modes'][np.argmax(predict)], predict)
+
+
+if __name__ == "__main__":
     main()
