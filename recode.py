@@ -1,3 +1,4 @@
+import sys
 import pyaudio
 import wave
 import os
@@ -43,11 +44,17 @@ try:
 
         while 1:
             data = stream.read(chunk)
-            a = np.frombuffer(data, dtype="int16")
-            if np.any(a>options["threshold"]):
+            np_data = np.frombuffer(data, dtype="int16")
+            level = int(np_data.max()/(2**8))
+            bar = "="*level + " "*(100-level)
+            th = int(options["threshold"]/(2**8))
+            bar = bar[:th] + "|" + bar[1+th:]
+            print("\r" + bar, end="")
+            if np.any(np_data>options["threshold"]):
                 frames.append(data)
                 break
-
+            
+        print()
         print("*** triggered")
 
         for i in range(0, int(rate / chunk * seconds)):
@@ -63,9 +70,9 @@ try:
 
         print("*** recoding done")
 
-        plt.figure(figsize=(15,3))
-        plt.plot(x)
-        plt.show()
+        # plt.figure(figsize=(15,3))
+        # plt.plot(x)
+        # plt.show()
 
         filename = "{:03}.wav".format(file_idx)
 
@@ -75,6 +82,10 @@ try:
         wf.setframerate(rate)
         wf.writeframes(frames)
         wf.close()
+
+        print("*** saved to "+filename)
+        print()
+
 
         file_idx += 1
 except KeyboardInterrupt:
