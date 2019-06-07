@@ -39,7 +39,6 @@ def main():
         print(setting_json + ' does not exist')
         exit()
 
-    args.recode = True
     if args.predict == True:
         predict(args, options)
     elif args.recode == True:
@@ -158,10 +157,8 @@ def learn(args, options):
     Y = []
     mode_num = len(modes)
         
-    print(mode_num)
     for mode_idx, mode in enumerate(modes):
         files = glob.glob(os.path.join(options["data_dir"], mode, "*.wav"))
-        print(len(files))
 
         for file in files:
             wr = wave.open(file, "r")
@@ -275,25 +272,37 @@ def predict(args, options):
     result_img_path = os.path.join('results', dt.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
     os.makedirs(result_img_path, exist_ok=True)
 
-    audio, stream = openAudio(channels, rate, chunk)
+    channels = options["channels"]
+    rate = options["rate"]
+    chunk = options["chunk"]
+
+    chunk_length = options["chunk_length"]
+    chunk_num = options["chunk_num"]
+    modes = options['modes']
+
 
     while 1:
-        X = []
+        frames = []
+
+        audio, stream = openAudio(channels, rate, chunk)
 
         for i in range(0, int(chunk_length / chunk)):
             data = stream.read(chunk)
             frames.append(data)
         frames = b''.join(frames)
 
-        melsp = calculate_melsp(frames)
-        X.append(melsp)
+        closeAudio(audio, stream)
 
-        X = np.array(X).astype('float32')
+        x = np.frombuffer(frames, dtype="int16") / float((2^15))
+
+        melsp = calculate_melsp(x)
+        X = np.array([melsp])
+        
         X = np.reshape(X, (X.shape[0],X.shape[1],X.shape[2],1))
 
         predict = model.predict(X)
 
-        print(file, options['modes'][np.argmax(predict)], predict)
+        print(options['modes'][np.argmax(predict)], predict)
 
 
 if __name__ == "__main__":
