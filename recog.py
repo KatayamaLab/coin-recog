@@ -67,8 +67,10 @@ def learn(args, options):
     Y = []
     mode_num = len(modes)
         
+    print(mode_num)
     for mode_idx, mode in enumerate(modes):
         files = glob.glob(os.path.join(options["data_dir"], mode, "*.wav"))
+        print(len(files))
 
         for file in files:
             wr = wave.open(file, "r")
@@ -148,12 +150,11 @@ def learn(args, options):
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(mode_num)(x)
+    x = Dropout(0.1)(x)
     x = Activation("softmax")(x)
 
     model = Model(inputs, x)
-    model.summary()
 
-    # Let's train the model using Adam with amsgrad
     model.compile(loss='categorical_crossentropy',
                 optimizer='adam',
                 metrics=['accuracy'])
@@ -174,5 +175,6 @@ def learn(args, options):
     model.save(os.path.join(options["model_dir"], 'save.h5'))
 
 
-if __name__ is "__main__":
+if __name__ == "__main__":
     main()
+

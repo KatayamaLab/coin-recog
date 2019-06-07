@@ -13,5 +13,5 @@
     "modes": ["1", "10"],
     "data_dir": "wav_data",
     "chunk_length": 4096,
-    "chunk_num": 100
+    "chunk_num": 30
 }
