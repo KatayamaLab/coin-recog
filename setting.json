@@ -11,7 +11,7 @@
     "threshold": 3000,
 
     "modes": ["a", "i"],
-    "data_dir": "wav_data",
+    "data_dir": "data/wav",
     "chunk_length": 4096,
     "chunk_num": 30
 }
