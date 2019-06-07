@@ -7,11 +7,11 @@
     "chunk": 1024,
     "channels": 1,
     "rate":  48000,
-    "seconds": 0.1,
-    "threshold": 1000,
+    "seconds": 0.5,
+    "threshold": 3000,
 
-    "modes": ["2", "3"],
+    "modes": ["1", "10"],
     "data_dir": "wav_data",
-    "chunk_length": 100,
-    "chunk_num": 1000
+    "chunk_length": 4096,
+    "chunk_num": 100
 }
