@@ -1,8 +1,4 @@
 {
-    "test_size": 0.10,
-    "model_dir": "model/",
-    "log_dir": "log/",
-
     "frames_per_buffer": 1024,
     "channels": 1,
     "rate":  48000,
@@ -10,7 +6,11 @@
     "threshold": 3000,
 
     "modes": ["1", "10", "_"],
-    "data_dir": "data/wav",
-    "chunk_length": 4096,
-    "chunk_num": 30
+
+    "test_size": 0.10,
+    "data_dir": "data/",
+    "log_dir": "log/",
+    "model_dir": "model/",
+
+    "chunk_num": 50
 }
