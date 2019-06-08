@@ -10,7 +10,7 @@
     "seconds": 0.5,
     "threshold": 3000,
 
-    "modes": ["a", "i"],
+    "modes": ["a", "i", "_"],
     "data_dir": "data/wav",
     "chunk_length": 4096,
     "chunk_num": 30

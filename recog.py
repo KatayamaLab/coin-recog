@@ -238,11 +238,11 @@ def learn(args, options):
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(mode_num)(x)
-    x = Dropout(0.1)(x)
+    x = Dropout(0.5)(x)
     x = Activation("softmax")(x)
 
     model = Model(inputs, x)
-
+    opt = tf.keras.optimizers.Adam(lr=0.00001, decay=1e-6, amsgrad=True)
     model.compile(loss='categorical_crossentropy',
                 optimizer='adam',
                 metrics=['accuracy'])
