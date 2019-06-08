@@ -140,6 +140,12 @@ def show_wave(x):
     plt.plot(x)
     plt.show()
 
+def add_white_noise(x, rate=0.002):
+    return x + rate*np.random.randn(len(x))
+
+def shift_sound(x, rate=2):
+    return np.roll(x, int(len(x)//rate))
+
 def learn(args, options):
     epochs = args.epochs
     batch_size = args.batch_size
@@ -211,13 +217,13 @@ def learn(args, options):
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(mode_num)(x)
-    x = Dropout(0.5)(x)
+    # x = Dropout(0.5)(x)
     x = Activation("softmax")(x)
 
     model = Model(inputs, x)
     opt = tf.keras.optimizers.Adam(lr=0.00001, decay=1e-6, amsgrad=True)
     model.compile(loss='categorical_crossentropy',
-                optimizer='adam',
+                optimizer=opt,
                 metrics=['accuracy'])
 
     model.summary()
