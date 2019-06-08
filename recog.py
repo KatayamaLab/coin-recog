@@ -23,6 +23,7 @@ def main():
     parser.add_argument('-d', '--datadir', type=str, default='data', help='Data dir to learn/predict')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=16, help='Batcn size')
+    parser.add_argument('-t', '--threshold', type=int, default=3000, help='threshold')
 
     args = parser.parse_args()
 
@@ -87,7 +88,7 @@ def recode(args, options):
                 th = int(options["threshold"]/(2**8))
                 bar = bar[:th] + "|" + bar[1+th:]
                 print("\r" + bar, end="")
-                if np.any(np_data>options["threshold"]):
+                if np.any(np_data > args.threshold):
                     frames.append(data)
                     break
                 
@@ -117,7 +118,8 @@ def recode(args, options):
 
             print("*** saved to "+filename)
             print()
-
+            
+            input("Press enter to proceed:")
 
             file_idx += 1
     except KeyboardInterrupt:
