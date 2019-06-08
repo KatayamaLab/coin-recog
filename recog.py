@@ -225,7 +225,7 @@ def learn(args, options):
     os.makedirs(options["log_dir"], exist_ok=True)
     os.makedirs(options["model_dir"], exist_ok=True)
 
-    tb_cb = tf.keras.callbacks.TensorBoard(log_dir=log_filepath, 
+    tb_cb = tf.keras.callbacks.TensorBoard(log_dir=options["log_dir"], 
         histogram_freq=1, write_graph=True, write_images=True)
 
 
