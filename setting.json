@@ -1,7 +1,7 @@
 {
     "test_size": 0.10,
-    "model_dir": "data/model",
-    "log_dir": "logs/",
+    "model_dir": "model/",
+    "log_dir": "log/",
 
     "frames_per_buffer": 1024,
     "channels": 1,
