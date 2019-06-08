@@ -35,6 +35,8 @@ def main():
     else:
         print(setting_json + ' does not exist')
         exit()
+    
+    learn(args, options)
 
     if args.predict == True:
         predict(args, options)
@@ -144,7 +146,7 @@ def add_white_noise(x, rate=0.002):
     return x + rate*np.random.randn(len(x))
 
 def shift_sound(x, rate=2):
-    return np.roll(x, int(len(x)//rate))
+    return np.roll(x, rate)
 
 def learn(args, options):
     epochs = args.epochs
@@ -165,16 +167,17 @@ def learn(args, options):
             data = wr.readframes(wr.getnframes())
             wr.close()
             
-            x = np.frombuffer(data, dtype="int16") / float((2^15))
-            wav_length = len(x)
+            x = np.frombuffer(data, dtype="int16") / float((2**15))
 
             for i in range(chunk_num):
-                pos = randint(0, wav_length - chunk_length)
-                x_ =  x[pos:pos+chunk_length]
-
+                x_ = add_white_noise(x, rate=np.random.rand()*0.05)
+                x_ = shift_sound(x_, np.random.randint(len(x)))
                 melsp = calculate_melsp(x_)
                 X.append(melsp)
                 Y.append(mode_idx)
+                if i==0 or i==1 or i==2:
+                    show_melsp(melsp)
+                    show_wave(x_)
 
     X = np.array(X).astype('float32')
     Y = tf.keras.utils.to_categorical(Y, mode_num)
@@ -264,18 +267,17 @@ def predict(args, options):
 
         audio, stream = openAudio(channels, rate, chunk)
 
-        for i in range(0, int(chunk_length / chunk)):
+        for i in range(0, int(chunk_length / chunk * second)+1):  #TODO: +1 is removed
             data = stream.read(chunk)
             frames.append(data)
         frames = b''.join(frames)
 
         closeAudio(audio, stream)
 
-        x = np.frombuffer(frames, dtype="int16") / float((2^15))
+        x = np.frombuffer(frames, dtype="int16") / float((2**15))
 
         melsp = calculate_melsp(x)
         X = np.array([melsp])
-
         X = np.reshape(X, (X.shape[0],X.shape[1],X.shape[2],1))
 
         predict = model.predict(X)
