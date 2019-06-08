@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import tensorflow as tf
 from tensorflow.keras.models import Model, load_model
@@ -10,13 +9,11 @@ import argparse
 import matplotlib.pyplot as plt
 from random import randint
 from sklearn.model_selection import train_test_split
-from python_speech_features import mfcc
-from scipy.fftpack import fft
 import librosa
 import librosa.display
 import wave
 import pyaudio
-import wave
+
 import datetime as dt
 
 
@@ -46,6 +43,7 @@ def main():
     elif args.learn == True:
         learn(args, options)
 
+
 def openAudio(channels, rate, frames_per_buffer):
     audio = pyaudio.PyAudio()
     stream = audio.open(format=pyaudio.paInt16,
@@ -55,10 +53,12 @@ def openAudio(channels, rate, frames_per_buffer):
                     frames_per_buffer=frames_per_buffer)
     return audio, stream
 
+
 def closeAudio(audio, stream):
     stream.stop_stream()
     stream.close()
     audio.terminate()
+
 
 def recode(args, options):
     channels = options["channels"]
@@ -96,7 +96,7 @@ def recode(args, options):
             print()
             print("*** triggered")
 
-            for i in range(0, int(rate / chunk * seconds)):
+            for i in range(1, int(rate / chunk * seconds)):
                 data = stream.read(chunk)
                 frames.append(data)
             frames = b''.join(frames)
@@ -107,9 +107,6 @@ def recode(args, options):
 
             print("*** recoding done")
 
-            # plt.figure(figsize=(15,3))
-            # plt.plot(x)
-            # plt.show()
 
             filename = "{:03}.wav".format(file_idx)
 
@@ -128,15 +125,12 @@ def recode(args, options):
     except KeyboardInterrupt:
         print("*** done")
 
-
-
 def calculate_melsp(x, n_fft=1024, hop_length=128):
     stft = np.abs(librosa.stft(x, n_fft=n_fft, hop_length=hop_length))**2
     log_stft = librosa.power_to_db(stft)
     melsp = librosa.feature.melspectrogram(S=log_stft,n_mels=128)
     return melsp
 
-# display wave in heatmap
 def show_melsp(melsp):
     librosa.display.specshow(melsp)
     plt.colorbar()
@@ -188,7 +182,6 @@ def learn(args, options):
         x = Activation("relu")(x)
         return x
 
-
     inputs = Input(shape=(X_train.shape[1:]))
 
     x_1 = cba(inputs, filters=32, kernel_size=(1,8), strides=(1,2))
@@ -232,7 +225,7 @@ def learn(args, options):
     log_filepath = "./logs/"
     os.makedirs(log_filepath, exist_ok=True)
     tb_cb = tf.keras.callbacks.TensorBoard(log_dir=log_filepath, 
-    histogram_freq=1, write_graph=True, write_images=True)
+        histogram_freq=1, write_graph=True, write_images=True)
 
     # history = model.fit(X, Y, batch_size=batch_size, epochs=epochs, 
     #     validation_split=0.1, shuffle=True, callbacks=[tb_cb])
@@ -260,7 +253,6 @@ def predict(args, options):
     chunk_num = options["chunk_num"]
     modes = options['modes']
 
-
     while 1:
         frames = []
 
@@ -277,13 +269,12 @@ def predict(args, options):
 
         melsp = calculate_melsp(x)
         X = np.array([melsp])
-        
+
         X = np.reshape(X, (X.shape[0],X.shape[1],X.shape[2],1))
 
         predict = model.predict(X)
 
         print(options['modes'][np.argmax(predict)], predict)
-
 
 if __name__ == "__main__":
     main()
