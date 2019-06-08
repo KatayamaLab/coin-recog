@@ -114,4 +114,5 @@ dmypy.json
 .pyre/
 
 data/
-logs/
+log/
+model/
