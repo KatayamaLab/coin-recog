@@ -230,12 +230,12 @@ def learn(args, options):
         histogram_freq=1, write_graph=True, write_images=True)
 
 
-    es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto')
+    # es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto')
     chkpt = os.path.join(options["model_dir"], 'save.h5')
     cp_cb = ModelCheckpoint(filepath = chkpt, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
 
     model.fit(X_train, Y_train, batch_size=batch_size, epochs=epochs, 
-        validation_data=(X_test, Y_test), callbacks=[tb_cb, es_cb, cp_cb])
+        validation_data=(X_test, Y_test), callbacks=[tb_cb, cp_cb])
 
     model.save(chkpt)
 
