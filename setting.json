@@ -1,16 +1,15 @@
 {
-    "img_dir": "data/insolation",
-    "draw_graph": false,
-    "pred_ratio": 0.1,
+    "test_size": 0.10,
     "model_dir": "data/model",
+    "log_dir": "logs/",
 
-    "chunk": 1024,
+    "frames_per_buffer": 1024,
     "channels": 1,
     "rate":  48000,
     "seconds": 0.5,
     "threshold": 3000,
 
-    "modes": ["1", "10"],
+    "modes": ["1", "10", "_"],
     "data_dir": "data/wav",
     "chunk_length": 4096,
     "chunk_num": 30

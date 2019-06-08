@@ -7,14 +7,11 @@ import numpy as np
 import glob
 import argparse
 import matplotlib.pyplot as plt
-from random import randint
 from sklearn.model_selection import train_test_split
 import librosa
 import librosa.display
 import wave
 import pyaudio
-
-import datetime as dt
 
 
 def main():
@@ -24,7 +21,7 @@ def main():
     parser.add_argument('-p', '--predict', action='store_true', help='Predict')
     parser.add_argument('-d', '--datadir', type=str, default='data', help='Data dir to learn/predict')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
-    parser.add_argument('--batch_size', type=int, default=512, help='Batcn size')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batcn size')
 
     args = parser.parse_args()
 
@@ -36,8 +33,6 @@ def main():
         print(setting_json + ' does not exist')
         exit()
     
-    learn(args, options)
-
     if args.predict == True:
         predict(args, options)
     elif args.recode == True:
@@ -65,7 +60,7 @@ def closeAudio(audio, stream):
 def recode(args, options):
     channels = options["channels"]
     rate = options["rate"]
-    chunk = options["chunk"]
+    frames_per_buffer = options["frames_per_buffer"]
     seconds = options["seconds"]
 
     mode = input("Enter mode: ")
@@ -78,13 +73,13 @@ def recode(args, options):
         while 1:
             print("*** waiting trigger")
 
-            audio, stream = openAudio(channels, rate, chunk)
+            audio, stream = openAudio(channels, rate, frames_per_buffer)
 
             frames = []
             trigger = False
 
             while 1:
-                data = stream.read(chunk)
+                data = stream.read(frames_per_buffer)
                 np_data = np.frombuffer(data, dtype="int16")
                 level = int(np_data.max()/(2**8))
                 bar = "="*level + " "*(100-level)
@@ -98,8 +93,8 @@ def recode(args, options):
             print()
             print("*** triggered")
 
-            for i in range(1, int(rate / chunk * seconds)):
-                data = stream.read(chunk)
+            for i in range(1, int(rate / frames_per_buffer * seconds)):
+                data = stream.read(frames_per_buffer)
                 frames.append(data)
             frames = b''.join(frames)
 
@@ -152,7 +147,6 @@ def learn(args, options):
     epochs = args.epochs
     batch_size = args.batch_size
     
-    chunk_length = options["chunk_length"]
     chunk_num = options["chunk_num"]
     modes = options['modes']
     X = []
@@ -180,7 +174,7 @@ def learn(args, options):
     Y = tf.keras.utils.to_categorical(Y, mode_num)
     X = np.reshape(X, (X.shape[0],X.shape[1],X.shape[2],1))
 
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10)
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=options["test_size"])
 
     def cba(inputs, filters, kernel_size, strides):
         x = Conv2D(filters, kernel_size=kernel_size, strides=strides, padding='same')(inputs)
@@ -228,44 +222,41 @@ def learn(args, options):
 
     model.summary()
 
-    log_filepath = "./logs/"
-    os.makedirs(log_filepath, exist_ok=True)
+    os.makedirs(options["log_dir"], exist_ok=True)
+    os.makedirs(options["model_dir"], exist_ok=True)
+
     tb_cb = tf.keras.callbacks.TensorBoard(log_dir=log_filepath, 
         histogram_freq=1, write_graph=True, write_images=True)
 
-    # history = model.fit(X, Y, batch_size=batch_size, epochs=epochs, 
-    #     validation_split=0.1, shuffle=True, callbacks=[tb_cb])
-    history = model.fit(X_train, Y_train, batch_size=batch_size, epochs=epochs, 
-        validation_data=(X_test, Y_test), callbacks=[tb_cb])
 
-    os.makedirs(options["model_dir"], exist_ok=True)
-    model.save(os.path.join(options["model_dir"], 'save.h5'))
+    es_cb = EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='auto')
+    chkpt = os.path.join(options["model_dir"], 'save.h5')
+    cp_cb = ModelCheckpoint(filepath = chkpt, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+
+    model.fit(X_train, Y_train, batch_size=batch_size, epochs=epochs, 
+        validation_data=(X_test, Y_test), callbacks=[tb_cb, es_cb, cp_cb])
+
+    model.save(chkpt)
 
 def predict(args, options):
-    model = load_model(os.path.join(options["model_dir"], 'save.h5'))
 
-    X = []
-    Y = []
-    mode_num = len(options['modes'])
+    modes = options['modes']
+    mode_num = len(modes)
     
-    result_img_path = os.path.join('results', dt.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
-    os.makedirs(result_img_path, exist_ok=True)
-
     channels = options["channels"]
     rate = options["rate"]
-    chunk = options["chunk"]
+    seconds = options["seconds"]
+    frames_per_buffer = options["frames_per_buffer"]
 
-    chunk_length = options["chunk_length"]
-    chunk_num = options["chunk_num"]
-    modes = options['modes']
+    model = load_model(os.path.join(options["model_dir"], 'save.h5'))
 
     while 1:
         frames = []
 
-        audio, stream = openAudio(channels, rate, chunk)
+        audio, stream = openAudio(channels, rate, frames_per_buffer)
 
-        for i in range(0, int(chunk_length / chunk * second)+1):  #TODO: +1 is removed
-            data = stream.read(chunk)
+        for i in range(0, int(rate / frames_per_buffer * seconds)+1):  #TODO: +1 is removed
+            data = stream.read(frames_per_buffer)
             frames.append(data)
         frames = b''.join(frames)
 
