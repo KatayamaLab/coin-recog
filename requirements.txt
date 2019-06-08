@@ -1,0 +1,6 @@
+tensorflow-gpu
+matplotlib
+sklearn
+python_speech_features
+librosa
+wave
