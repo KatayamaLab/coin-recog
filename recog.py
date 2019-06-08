@@ -175,9 +175,6 @@ def learn(args, options):
                 melsp = calculate_melsp(x_)
                 X.append(melsp)
                 Y.append(mode_idx)
-                if i==0 or i==1 or i==2:
-                    show_melsp(melsp)
-                    show_wave(x_)
 
     X = np.array(X).astype('float32')
     Y = tf.keras.utils.to_categorical(Y, mode_num)
