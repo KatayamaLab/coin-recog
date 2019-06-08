@@ -172,32 +172,12 @@ def learn(args, options):
                 pos = randint(0, wav_length - chunk_length)
                 x_ =  x[pos:pos+chunk_length]
 
-                # x_mfcc = mfcc(x[pos:pos+chunk_length], samplerate=options["rate"])
-                # X.append(x_mfcc[0])
-                # X.append(x[pos:pos+chunk_length])
-
-                # x_ = abs(fft(x[pos:pos+chunk_length]))
-                # X.append(x_[0:512])
-
                 melsp = calculate_melsp(x_)
                 X.append(melsp)
-
-                # print("wave size:{0}\nmelsp size:{1}".format(x.shape, melsp.shape))
-                # show_wave(x)
-                # show_melsp(melsp)
-
-                # plt.figure(figsize=(15,3))
-                # plt.plot(x)
-                # plt.show()
-
                 Y.append(mode_idx)
 
-
-
     X = np.array(X).astype('float32')
-
     Y = tf.keras.utils.to_categorical(Y, mode_num)
-
     X = np.reshape(X, (X.shape[0],X.shape[1],X.shape[2],1))
 
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.10)
