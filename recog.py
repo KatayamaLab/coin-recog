@@ -258,6 +258,7 @@ def predict(args, options):
     seconds = options["seconds"]
     frames_per_buffer = options["frames_per_buffer"]
 
+    plt.style.use('dark_background')
     fig = plt.figure()
     ax = fig.add_subplot(111)
     labels = np.arange(mode_num)
