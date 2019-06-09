@@ -250,7 +250,6 @@ def learn(args, options):
     model.save(chkpt)
 
 def predict(args, options):
-
     modes = options['modes']
     mode_num = len(modes)
     
@@ -258,6 +257,14 @@ def predict(args, options):
     rate = options["rate"]
     seconds = options["seconds"]
     frames_per_buffer = options["frames_per_buffer"]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    labels = np.arange(mode_num)
+    bar_data = ax.bar(labels, np.zeros(len(modes)))
+    ax.set_ylim([0, 1])
+    ax.set_ylabel('Probability')
+
 
     model = load_model(os.path.join(options["model_dir"], 'save.h5'))
 
@@ -282,6 +289,12 @@ def predict(args, options):
         predict = model.predict(X)
 
         print(options['modes'][np.argmax(predict)], predict)
+
+        for i in range(len(predict[0])):
+            bar_data[i].set_height(predict[0][i])
+
+        plt.xticks(labels, modes)
+        plt.pause(0.05)
 
 if __name__ == "__main__":
     main()
