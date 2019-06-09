@@ -1,6 +1,8 @@
-tensorflow-gpu
-matplotlib
-sklearn
-python_speech_features
-librosa
-wave
+tensorflow==1.13.1
+matplotlib==3.0.2
+scikit-learn==0.20.0
+python-speech-features==0.6
+librosa==0.6.3
+Wave==0.0.2
+PyAudio==0.2.11
+numpy==1.16.3

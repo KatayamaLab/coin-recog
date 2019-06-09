@@ -1,4 +1,4 @@
-# 学習時間
+# Time to training model
 
 Google Cloud Platform 2 h 50 sec
 
