@@ -2,9 +2,9 @@
 
 ## Requirements
 ```
-$ sudo apt-get install portaudio19-dev
-$ brew install portaudio
-$ pip install -r requirement
+$ sudo apt-get install portaudio19-dev  # for linux (Debian)
+$ brew install portaudio # for MacOS
+$ pip install -r requirements.txt
 ```
 
 ## How to use
