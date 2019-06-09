@@ -82,6 +82,8 @@ def recode(args, options):
                 threshold = input("Input trigger level[{}]: ".format(options["threshold"]))
                 if threshold == "":
                     threshold = options["threshold"]
+                else:
+                    threshold = int(threshold)
 
                 print("*** waiting trigger")
 
@@ -95,10 +97,10 @@ def recode(args, options):
                     np_data = np.frombuffer(data, dtype="int16")
                     level = int(np_data.max()/(2**8))
                     bar = "="*level + " "*(100-level)
-                    th = int(options["threshold"]/(2**8))
+                    th = int(threshold/(2**8))
                     bar = bar[:th] + "|" + bar[1+th:]
                     print("\r" + bar, end="")
-                    if np.any(np_data > args.threshold):
+                    if np.any(np_data > threshold):
                         frames.append(data)
                         break
                     
