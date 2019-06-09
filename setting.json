@@ -3,14 +3,15 @@
     "channels": 1,
     "rate":  48000,
     "seconds": 0.5,
-    "threshold": 3000,
+    "threshold": 5000,
 
-    "modes": ["1", "10", "_"],
+    "recode_modes": ["1", "5", "10", "50", "100", "500"],
+    "modes": ["1", "5", "10", "50", "100", "500", "_"],
 
     "test_size": 0.10,
     "data_dir": "data/",
     "log_dir": "log/",
     "model_dir": "model/",
 
-    "chunk_num": 50
+    "chunk_num": 30
 }

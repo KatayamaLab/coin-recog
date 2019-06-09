@@ -16,17 +16,6 @@ import pyaudio
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--learn', action='store_true', help='Learn')
-    parser.add_argument('-r', '--recode', action='store_true', help='Recode')
-    parser.add_argument('-p', '--predict', action='store_true', help='Predict')
-    parser.add_argument('-d', '--datadir', type=str, default='data', help='Data dir to learn/predict')
-    parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batcn size')
-    parser.add_argument('-t', '--threshold', type=int, default=3000, help='threshold')
-
-    args = parser.parse_args()
-
     setting_json = 'setting.json'
     if os.path.exists(setting_json):
         with open(setting_json , 'r') as f:
@@ -34,7 +23,18 @@ def main():
     else:
         print(setting_json + ' does not exist')
         exit()
-    
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--learn', action='store_true', help='Learn')
+    parser.add_argument('-r', '--recode', action='store_true', help='Recode')
+    parser.add_argument('-p', '--predict', action='store_true', help='Predict')
+    parser.add_argument('-d', '--datadir', type=str, default='data', help='Data dir to learn/predict')
+    parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batcn size')
+    parser.add_argument('-t', '--threshold', type=int, default=options['threshold'], help='threshold')
+    parser.add_argument('-o', '--onebyone', action='store_true', help='eachcoin')
+    args = parser.parse_args()
+
     if args.predict == True:
         predict(args, options)
     elif args.recode == True:
@@ -65,62 +65,68 @@ def recode(args, options):
     frames_per_buffer = options["frames_per_buffer"]
     seconds = options["seconds"]
 
-    mode = input("Enter mode: ")
-    if mode=="":
-        mode = "test"
-    os.makedirs(os.path.join(options["data_dir"], mode), exist_ok=True)
+    if args.onebyone:
+        modes = options["recode_modes"]
+    else:
+        mode = input("Enter mode [test]: ")
+        if mode=="":
+            mode = "test"
+        modes = [mode]
 
     file_idx = 0
     try:
         while 1:
-            print("*** waiting trigger")
+            for mode in modes:
+                os.makedirs(os.path.join(options["data_dir"], mode), exist_ok=True)
 
-            audio, stream = openAudio(channels, rate, frames_per_buffer)
+                threshold = input("Input trigger level[{}]: ".format(options["threshold"]))
+                if threshold == "":
+                    threshold = options["threshold"]
 
-            frames = []
-            trigger = False
+                print("*** waiting trigger")
 
-            while 1:
-                data = stream.read(frames_per_buffer)
-                np_data = np.frombuffer(data, dtype="int16")
-                level = int(np_data.max()/(2**8))
-                bar = "="*level + " "*(100-level)
-                th = int(options["threshold"]/(2**8))
-                bar = bar[:th] + "|" + bar[1+th:]
-                print("\r" + bar, end="")
-                if np.any(np_data > args.threshold):
+                audio, stream = openAudio(channels, rate, frames_per_buffer)
+
+                frames = []
+                trigger = False
+
+                while 1:
+                    data = stream.read(frames_per_buffer)
+                    np_data = np.frombuffer(data, dtype="int16")
+                    level = int(np_data.max()/(2**8))
+                    bar = "="*level + " "*(100-level)
+                    th = int(options["threshold"]/(2**8))
+                    bar = bar[:th] + "|" + bar[1+th:]
+                    print("\r" + bar, end="")
+                    if np.any(np_data > args.threshold):
+                        frames.append(data)
+                        break
+                    
+                print()
+                print("*** triggered")
+
+                for i in range(1, int(rate / frames_per_buffer * seconds)):
+                    data = stream.read(frames_per_buffer)
                     frames.append(data)
-                    break
-                
-            print()
-            print("*** triggered")
+                frames = b''.join(frames)
 
-            for i in range(1, int(rate / frames_per_buffer * seconds)):
-                data = stream.read(frames_per_buffer)
-                frames.append(data)
-            frames = b''.join(frames)
+                closeAudio(audio, stream)
 
-            closeAudio(audio, stream)
+                x = np.frombuffer(frames, dtype="int16")
 
-            x = np.frombuffer(frames, dtype="int16")
+                print("*** recoding done")
 
-            print("*** recoding done")
+                filepath = os.path.join(options["data_dir"], mode, "{:03}.wav".format(file_idx))
 
+                wf = wave.open(filepath, 'wb')
+                wf.setnchannels(channels)
+                wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
+                wf.setframerate(rate)
+                wf.writeframes(frames)
+                wf.close()
 
-            filename = "{:03}.wav".format(file_idx)
-
-            wf = wave.open(os.path.join(options["data_dir"], mode, filename), 'wb')
-            wf.setnchannels(channels)
-            wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
-            wf.setframerate(rate)
-            wf.writeframes(frames)
-            wf.close()
-
-            print("*** saved to "+filename)
-            print()
-            
-            input("Press enter to proceed:")
-
+                print("*** saved to "+filepath)
+                print()
             file_idx += 1
     except KeyboardInterrupt:
         print("*** done")
@@ -258,7 +264,7 @@ def predict(args, options):
 
         audio, stream = openAudio(channels, rate, frames_per_buffer)
 
-        for i in range(0, int(rate / frames_per_buffer * seconds)+1):  #TODO: +1 is removed
+        for i in range(0, int(rate / frames_per_buffer * seconds)):
             data = stream.read(frames_per_buffer)
             frames.append(data)
         frames = b''.join(frames)
