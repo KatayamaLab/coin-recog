@@ -13,6 +13,8 @@ import librosa
 import librosa.display
 import wave
 import pyaudio
+import cv2
+
 
 
 def main():
@@ -260,12 +262,18 @@ def predict(args, options):
 
     plt.style.use('dark_background')
     fig = plt.figure()
-    ax = fig.add_subplot(111)
+    ax = fig.add_subplot(212)
     labels = np.arange(mode_num)
     bar_data = ax.bar(labels, np.zeros(len(modes)))
     ax.set_ylim([0, 1])
     ax.set_ylabel('Probability')
 
+    ax_im = fig.add_subplot(211)
+    imgfiles = ['1.jpeg', '5.jpeg', '10.jpeg', '50.jpeg', '100.jpeg', '500.jpeg', '0.jpeg']
+    img = []
+    for imgfile in imgfiles:
+        img.append(cv2.cvtColor(cv2.imread('./image/'+imgfile), cv2.COLOR_BGR2RGB))
+    img_data = ax_im.imshow(img[6])
 
     model = load_model(os.path.join(options["model_dir"], 'save.h5'))
 
@@ -293,6 +301,11 @@ def predict(args, options):
 
         for i in range(len(predict[0])):
             bar_data[i].set_height(predict[0][i])
+        idx = predict.argmax()
+        if predict[0][idx]>0.5:
+            img_data.set_array(img[idx])
+        else:
+            img_data.set_array(img[6])
 
         plt.xticks(labels, modes)
         plt.pause(0.05)
