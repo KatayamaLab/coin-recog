@@ -7,6 +7,32 @@ $ brew install portaudio # for MacOS
 $ pip install -r requirements.txt
 ```
 
+for M1 mac
+
+```
+brew list libsndfile  
+mkdir -p path-to-python/site-packages/_soundfile_data/ 
+cp /opt/homebrew/Cellar/libsndfile/1.1.0_1/lib/libsndfile.dylib path-to-python/site-packages/_soundfile_data/ 
+```
+
+```
+brew install portaudio --HEAD
+vim ~/.pydistutils.cfg
+```
+
+Write following text to `.pydistutils.conf`
+
+```
+[build_ext]
+include_dirs=/opt/homebrew/opt/portaudio/include/
+library_dirs=/opt/homebrew/opt/portaudio/lib/
+```
+
+```
+pip intall pyaudio
+```
+
+
 ## How to use
 
 Recode sound of each coin
